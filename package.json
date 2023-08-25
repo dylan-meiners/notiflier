@@ -1,0 +1,17 @@
+{
+  "name": "notiflier",
+  "version": "1.0.0",
+  "description": "Notifies users when a suspected flyover is imminent.",
+  "main": "index.js",
+  "scripts": {
+    "run": "node index.js"
+  },
+  "author": "dylan-meiners",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2",
+    "twilio": "^4.15.0"
+  },
+  "type": "module"
+}
