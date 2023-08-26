@@ -4,9 +4,8 @@ import http from "http";
 import url from "url";
 import "dotenv/config";
 
-log("Hello from Notiflier");
-
 process.stdout.write("\x1bc");
+log("Hello from Notiflier");
 
 const HTTP_HOST = "localhost";
 const HTTP_PORT = 80;
