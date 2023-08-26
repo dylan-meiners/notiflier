@@ -46,7 +46,7 @@ httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
   log(`HTTP server running on http://${HTTP_HOST}:${HTTP_PORT}`);
 });
 
-const USE_TWILIO = false;
+const USE_TWILIO = true;
 let client = USE_TWILIO ? twilio(ACCOUNT_SID, AUTH_TOKEN) : null;
 
 const ACCOUNT_SID = process.env.ACCOUNT_SID;
