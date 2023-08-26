@@ -4,6 +4,8 @@ import http from "http";
 import url from "url";
 import "dotenv/config";
 
+log("Hello from Notiflier");
+
 process.stdout.write("\x1bc");
 
 const HTTP_HOST = "localhost";
@@ -73,6 +75,7 @@ const INTERESTED_TYPES = [
 ];
 const MAX_ALT = 12000;
 const MIN_SPEED = 150;
+const SEARCH_RADIUS_NM = 10;
 
 var trackedAircraft = [];
 var aircraftOnCooldown = [];
@@ -80,8 +83,6 @@ var updatedTrackedAircraftInterval = null;
 const COOLDOWN_TIME = 60000;
 // Let's hope the hex isn't gonna be used in the next 24 hours lol
 const MANUAL_STOP_TRACKING_COOLDOWN_TIME = 24 * 60 * 60 * 1000;
-
-log("Hello from Flyover-Notifier");
 
 const FETCH_AIRCRAFT_INTERVAL_TIME_SLOW = 60000;
 const FETCH_AIRCRAFT_INTERVAL_TIME_FAST = 30000;
@@ -97,7 +98,7 @@ async function fetchAircraft() {
   var data = null;
   try {
     response = await fetch(
-      `https://adsbexchange-com1.p.rapidapi.com/v2/lat/${LAT}/lon/${LON}/dist/10`,
+      `https://adsbexchange-com1.p.rapidapi.com/v2/lat/${LAT}/lon/${LON}/dist/${SEARCH_RADIUS_NM}/`,
       {
         method: "get",
         headers: {
@@ -121,17 +122,17 @@ async function fetchAircraft() {
           log(
             `${nAircraft > 0 ? nAircraft : "No"} aircraft ${
               nAircraft === 1 ? "is" : "are"
-            } within 10 NM of the area`
+            } within ${SEARCH_RADIUS_NM} NM of the specified area`
           );
 
-          // Check to see if all aircraft we are tracking are still within 10 NM
+          // Check to see if all aircraft we are tracking are still within SEARCH_RADIUS_NM NM
           for (var i = 0; i < trackedAircraft.length; i++) {
             // The tracked aircraft would be null if it was stopped tracking because of an HTTP request
             if (trackedAircraft[i] !== null) {
               var trackedAircraftHex = trackedAircraft[i];
               var trackedAircraftObject = null;
               var searching = true;
-              // See if the current tracked aircraft we are looking at is still within 10 NM
+              // See if the current tracked aircraft we are looking at is still within SEARCH_RADIUS_NM NM
               for (var j = 0; j < data["total"] && searching; j++) {
                 if (
                   data["ac"][j] !== null &&
@@ -145,7 +146,7 @@ async function fetchAircraft() {
                   data["ac"][j] = null;
                 }
               }
-              // If the aircraft is no longer within 10 NM
+              // If the aircraft is no longer within SEARCH_RADIUS_NM NM
               if (searching) {
                 // Mark that we need to stop tracking it
                 trackedAircraft[i] = null;
@@ -161,7 +162,7 @@ async function fetchAircraft() {
                 }, COOLDOWN_TIME);
                 log(`[${trackedAircraftHex}]: Stopped tracking; on cooldown`);
               }
-              // Otherwise, if the aircraft is still within 10 NM
+              // Otherwise, if the aircraft is still within SEARCH_RADIUS_NM NM
               else {
                 let body = `[${trackedAircraftHex}${
                   trackedAircraftObject.hasOwnProperty("flight")
