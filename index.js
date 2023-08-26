@@ -85,6 +85,8 @@ const MANUAL_STOP_TRACKING_COOLDOWN_TIME = 24 * 60 * 60 * 1000;
 
 const FETCH_AIRCRAFT_INTERVAL_TIME_SLOW = 60000;
 const FETCH_AIRCRAFT_INTERVAL_TIME_FAST = 30000;
+
+sendSMS("Notiflier has started", "none");
 fetchAircraft();
 var fetchAircraftInterval = setInterval(
   fetchAircraft,
