@@ -46,9 +46,6 @@ httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
   log(`HTTP server running on http://${HTTP_HOST}:${HTTP_PORT}`);
 });
 
-const USE_TWILIO = true;
-let client = USE_TWILIO ? twilio(ACCOUNT_SID, AUTH_TOKEN) : null;
-
 const ACCOUNT_SID = process.env.ACCOUNT_SID;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const TWILIO_SENDER_NUMBER = process.env.TWILIO_SENDER_NUMBER;
@@ -56,6 +53,9 @@ const TWILIO_TARGET_NUMBER = process.env.TWILIO_TARGET_NUMBER;
 const ADSB_AUTH_TOKEN = process.env.ADSB_AUTH_TOKEN;
 const LAT = process.env.LAT;
 const LON = process.env.LON;
+
+const USE_TWILIO = true;
+let client = USE_TWILIO ? twilio(ACCOUNT_SID, AUTH_TOKEN) : null;
 
 const INTERESTED_TYPES = [
   "C130",
