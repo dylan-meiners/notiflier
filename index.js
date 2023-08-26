@@ -8,7 +8,7 @@ process.stdout.write("\x1bc");
 log("Hello from Notiflier");
 
 const HTTP_HOST = "localhost";
-const HTTP_PORT = 80;
+const HTTP_PORT = 8080;
 
 const httpRequestListener = function (req, res) {
   log(`Request from ${req.socket.remoteAddress}`);
