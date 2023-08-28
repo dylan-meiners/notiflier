@@ -3,6 +3,7 @@ import twilio from "twilio";
 import http from "http";
 import url from "url";
 import "dotenv/config";
+import nodemailer from "nodemailer";
 
 process.stdout.write("\x1bc");
 log("Hello from Notiflier");
@@ -46,6 +47,13 @@ httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
   log(`HTTP server running on http://${HTTP_HOST}:${HTTP_PORT}`);
 });
 
+const COMM_METHOD = process.env.COMM_METHOD;
+
+if (COMM_METHOD !== "twilio" && COMM_METHOD !== "email") {
+  log(`No valid communication method specified; COMM_METHOD: ${COMM_METHOD}`);
+  exit(-1);
+}
+
 const ACCOUNT_SID = process.env.ACCOUNT_SID;
 const AUTH_TOKEN = process.env.AUTH_TOKEN;
 const TWILIO_SENDER_NUMBER = process.env.TWILIO_SENDER_NUMBER;
@@ -54,8 +62,24 @@ const ADSB_AUTH_TOKEN = process.env.ADSB_AUTH_TOKEN;
 const LAT = process.env.LAT;
 const LON = process.env.LON;
 
-const USE_TWILIO = true;
+const USE_TWILIO = COMM_METHOD === "twilio";
 let client = USE_TWILIO ? twilio(ACCOUNT_SID, AUTH_TOKEN) : null;
+
+const EMAIL_SERVICE = process.env.EMAIL_SERVICE;
+const EMAIL_EMAIL = process.env.EMAIL_EMAIL;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_TO = process.env.EMAIL_TO;
+
+const USE_EMAIL = COMM_METHOD === "email";
+let transporter = USE_EMAIL
+  ? nodemailer.createTransport({
+      service: EMAIL_SERVICE,
+      auth: {
+        user: EMAIL_EMAIL,
+        pass: EMAIL_PASS,
+      },
+    })
+  : null;
 
 const INTERESTED_TYPES = [
   "C130",
@@ -86,7 +110,7 @@ const MANUAL_STOP_TRACKING_COOLDOWN_TIME = 24 * 60 * 60 * 1000;
 const FETCH_AIRCRAFT_INTERVAL_TIME_SLOW = 60000;
 const FETCH_AIRCRAFT_INTERVAL_TIME_FAST = 30000;
 
-sendSMS("Notiflier has started", "none");
+sendMessage("Notiflier has started", "none");
 fetchAircraft();
 var fetchAircraftInterval = setInterval(
   fetchAircraft,
@@ -190,7 +214,7 @@ async function fetchAircraft() {
                     ? trackedAircraftObject["track"]
                     : "n/a"
                 }.`;
-                sendSMS(body, trackedAircraftHex);
+                sendMessage(body, trackedAircraftHex);
               }
             }
           }
@@ -230,14 +254,19 @@ async function fetchAircraft() {
                   interested = true;
                 }
               }
-              // Otherwise, if aircraft does not have a callsign or registration, then it's probably a fighter
+              // Otherwise, if aircraft does not have a callsign or registration, then it's probably a fighter (check speed to make sure it's not a sailplane though)
               else if (
                 !data["ac"][i].hasOwnProperty("flight") &&
-                !data["ac"][i].hasOwnProperty("r")
+                !data["ac"][i].hasOwnProperty("r") &&
+                data["ac"][i].hasOwnProperty("gs") &&
+                data["ac"][i]["gs"] >= MIN_SPEED
               ) {
-                reason = "no callsign or registration";
+                reason =
+                  "no callsign or registration and meets minimum ground speed parameters";
                 interested = true;
-              } else if (
+              }
+              // Otherwise, if the aircraft is going low enough and slow enough, then it's probably a military aircraft with special clearance
+              else if (
                 getAltitude(data["ac"][i]) !== null &&
                 getAltitude(data["ac"][i] <= MAX_ALT) &&
                 data.hasOwnProperty("gs") &&
@@ -290,7 +319,7 @@ async function startTracking(aircraft, reason) {
     }. Heading: ${
       aircraft.hasOwnProperty("track") ? aircraft["track"] : "n/a"
     }.`;
-    sendSMS(body, hex);
+    sendMessage(body, hex);
 
     // If this is the first aircraft we started tracking, set the fetch interval to fast
     if (trackedAircraft.length === 1) {
@@ -309,7 +338,7 @@ function log(shenme) {
   console.log(`${"\x1b[94m"}${now.toUTCString()} -> ${"\x1b[0m"}${shenme}`);
 }
 
-async function sendSMS(body, hex) {
+async function sendMessage(body, hex) {
   if (USE_TWILIO) {
     let message = await client.messages.create({
       body: body,
@@ -319,9 +348,27 @@ async function sendSMS(body, hex) {
     log(
       `[${hex}] Message sent from ${message.from} to ${message.to}: ${message.body}`
     );
+  } else if (USE_EMAIL) {
+    transporter.sendMail(
+      {
+        from: EMAIL_EMAIL,
+        to: EMAIL_TO,
+        subject: "Notiflier",
+        text: body,
+      },
+      (error, info) => {
+        if (error) {
+          log(
+            `sendMessage encountered error while trying to send email: ${error}`
+          );
+        } else {
+          log(`Email sent from ${EMAIL_EMAIL} to ${EMAIL_TO}: ${body}`);
+        }
+      }
+    );
   } else {
     log(
-      `[${hex}] (NOT USING TWILIO) Message would have been sent from ${TWILIO_SENDER_NUMBER} to ${TWILIO_TARGET_NUMBER}: ${body}`
+      `[${hex}] (NOT USING TWILIO OR EMAIL) Message would have been: ${body}`
     );
   }
 }
