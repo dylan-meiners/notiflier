@@ -8,7 +8,7 @@ import nodemailer from "nodemailer";
 process.stdout.write("\x1bc");
 log("Hello from Notiflier");
 
-const HTTP_HOST = "localhost";
+const HTTP_HOST = process.env.HTTP_HOST;
 const HTTP_PORT = 8080;
 
 const httpRequestListener = function (req, res) {
