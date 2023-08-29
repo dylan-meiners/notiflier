@@ -102,7 +102,7 @@ const INTERESTED_TYPES = [
 ];
 const MAX_ALT = 12000;
 const MIN_SPEED = 150;
-const SEARCH_RADIUS_NM = 10;
+const SEARCH_RADIUS_NM = process.env.SEARCH_RADIUS_NM;
 
 var trackedAircraft = [];
 var aircraftOnCooldown = [];
