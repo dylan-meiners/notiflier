@@ -102,6 +102,7 @@ const INTERESTED_TYPES = [
 ];
 const MAX_ALT = 12000;
 const MIN_SPEED = 150;
+const ABS_MIN_SPEED = 100;
 const SEARCH_RADIUS_NM = process.env.SEARCH_RADIUS_NM;
 
 var trackedAircraft = [];
@@ -281,11 +282,15 @@ async function fetchAircraft() {
               }
 
               if (interested) {
-                // If the aircraft is reporting altitude and it is above MAX_ALT, we are no longer interested
-                if (data["ac"][i].hasOwnProperty("alt_baro")) {
-                  if (data["ac"][i]["alt_baro"] > MAX_ALT) {
-                    interested = false;
-                  }
+                // If the aircraft is reporting altitude and it is above MAX_ALT,
+                // or the aircraft is probably on the ground (moving too slow
+                // to be flying), we are no longer interested
+                if (
+                  (getAltitude(data["ac"][i]) !== null &&
+                    getAltitude(data["ac"][i]["alt_baro"]) > MAX_ALT) ||
+                  data["ac"]["gs"] < ABS_MIN_SPEED
+                ) {
+                  interested = false;
                 }
               }
               if (interested) {
