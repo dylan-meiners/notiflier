@@ -8,44 +8,48 @@ import nodemailer from "nodemailer";
 process.stdout.write("\x1bc");
 log("Hello from Notiflier");
 
+const USE_HTTP_SERVER = true;
 const HTTP_HOST = process.env.HTTP_HOST;
 const HTTP_PORT = 8080;
+const VM_IP = process.env.VM_IP;
 
-const httpRequestListener = function (req, res) {
-  log(`Request from ${req.socket.remoteAddress}`);
-  let query = url.parse(req.url, true).query;
-  if (query !== undefined) {
-    let hex = query.hex;
-    if (trackedAircraft.indexOf(hex) !== -1) {
-      log(
-        `Proceeding with request to stop tracking ${hex}; placing on long cooldown`
-      );
-      trackedAircraft[trackedAircraft.indexOf(hex)] = null;
+if (USE_HTTP_SERVER) {
+  const httpRequestListener = function (req, res) {
+    log(`Request from ${req.socket.remoteAddress}`);
+    let query = url.parse(req.url, true).query;
+    if (query !== undefined) {
+      let hex = query.hex;
+      if (trackedAircraft.indexOf(hex) !== -1) {
+        log(
+          `Proceeding with request to stop tracking ${hex}; placing on long cooldown`
+        );
+        trackedAircraft[trackedAircraft.indexOf(hex)] = null;
 
-      aircraftOnCooldown.push(hex);
-      setTimeout(() => {
-        // Take off cooldown after it is done
-        aircraftOnCooldown.splice(aircraftOnCooldown.indexOf(hex), 1);
-        log(`[${hex}]: Off long cooldown`);
-      }, MANUAL_STOP_TRACKING_COOLDOWN_TIME);
+        aircraftOnCooldown.push(hex);
+        setTimeout(() => {
+          // Take off cooldown after it is done
+          aircraftOnCooldown.splice(aircraftOnCooldown.indexOf(hex), 1);
+          log(`[${hex}]: Off long cooldown`);
+        }, MANUAL_STOP_TRACKING_COOLDOWN_TIME);
 
-      res.writeHead(200);
-      res.end();
+        res.writeHead(200);
+        res.end();
+      } else {
+        log(`Request bad; could not find hex in tracked aircraft`);
+        res.writeHead(500);
+        res.end();
+      }
     } else {
-      log(`Request bad; could not find hex in tracked aircraft`);
-      res.writeHead(500);
+      log(`Request failed; invalid query: ${query.toString()}`);
+      res.writeHead(400);
       res.end();
     }
-  } else {
-    log(`Request failed; invalid query: ${query.toString()}`);
-    res.writeHead(400);
-    res.end();
-  }
-};
-const httpServer = http.createServer(httpRequestListener);
-httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
-  log(`HTTP server running on http://${HTTP_HOST}:${HTTP_PORT}`);
-});
+  };
+  const httpServer = http.createServer(httpRequestListener);
+  httpServer.listen(HTTP_PORT, HTTP_HOST, () => {
+    log(`HTTP server running on http://${HTTP_HOST}:${HTTP_PORT}`);
+  });
+}
 
 const COMM_METHOD = process.env.COMM_METHOD;
 
@@ -92,9 +96,9 @@ const INTERESTED_TYPES = [
   "C17",
   "B1",
   "C30J",
-  "DHC6",
-  "SR20",
-  "PA18",
+  //"DHC6",
+  //"SR20",
+  //"PA18",
 ];
 const MAX_ALT = 12000;
 const MIN_SPEED = 150;
@@ -319,6 +323,7 @@ async function startTracking(aircraft, reason) {
     }. Heading: ${
       aircraft.hasOwnProperty("track") ? aircraft["track"] : "n/a"
     }.`;
+    //}. Stop tracking with http://${VM_IP}?hex=${hex}/`;
     sendMessage(body, hex);
 
     // If this is the first aircraft we started tracking, set the fetch interval to fast
