@@ -23,6 +23,7 @@ if (USE_HTTP_SERVER) {
         log(
           `Proceeding with request to stop tracking ${hex}; placing on long cooldown`
         );
+        sendMessage(`Stopped tracking ${hex}; placing on long cooldown.`);
         trackedAircraft[trackedAircraft.indexOf(hex)] = null;
 
         aircraftOnCooldown.push(hex);
@@ -191,6 +192,9 @@ async function fetchAircraft() {
                   log(`[${trackedAircraftHex}]: Off cooldown`);
                 }, COOLDOWN_TIME);
                 log(`[${trackedAircraftHex}]: Stopped tracking; on cooldown`);
+                sendMessage(
+                  `Stopped tracking ${trackedAircraftHex}; placing on short cooldown.`
+                );
               }
               // Otherwise, if the aircraft is still within SEARCH_RADIUS_NM NM
               else {
@@ -198,7 +202,7 @@ async function fetchAircraft() {
                   trackedAircraftObject.hasOwnProperty("flight")
                     ? " (" + trackedAircraftObject["flight"] + ")"
                     : ""
-                }] Type: ${
+                }] T: ${
                   trackedAircraftObject.hasOwnProperty("t")
                     ? trackedAircraftObject["t"]
                     : "n/a"
@@ -210,11 +214,11 @@ async function fetchAircraft() {
                     : trackedAircraftObject.hasOwnProperty("nav_altitude_mcp")
                     ? trackedAircraftObject["nav_altitude_mcp"]
                     : "n/a"
-                }. Speed: ${
+                }. GS: ${
                   trackedAircraftObject.hasOwnProperty("gs")
                     ? trackedAircraftObject["gs"]
                     : "n/a"
-                }. Heading: ${
+                }. Dir: ${
                   trackedAircraftObject.hasOwnProperty("track")
                     ? trackedAircraftObject["track"]
                     : "n/a"
@@ -266,8 +270,7 @@ async function fetchAircraft() {
                 data["ac"][i].hasOwnProperty("gs") &&
                 data["ac"][i]["gs"] >= MIN_SPEED
               ) {
-                reason =
-                  "no callsign or registration and meets minimum ground speed parameters";
+                reason = "no flt or reg; meets alt & gs req";
                 interested = true;
               }
               // Otherwise, if the aircraft is going low enough and slow enough, then it's probably a military aircraft with special clearance
@@ -277,7 +280,7 @@ async function fetchAircraft() {
                 data.hasOwnProperty("gs") &&
                 data["ac"][i]["gs"] >= MIN_SPEED
               ) {
-                reason = "meets minimum altitude and ground speed parameters";
+                reason = "meets alt & gs req";
                 interested = true;
               }
 
@@ -319,13 +322,11 @@ async function startTracking(aircraft, reason) {
   if (aircraftOnCooldown.indexOf(hex) === -1) {
     trackedAircraft.push(hex);
     log(`[${hex}]: Started tracking`);
-    let body = `Started tracking ${hex}. Reason: ${reason}. Callsign: ${
+    let body = `Started tracking ${hex} b/c ${reason}. Flt: ${
       aircraft.hasOwnProperty("flight") ? aircraft["flight"] : "n/a"
-    }. Type: ${aircraft.hasOwnProperty("t") ? aircraft["t"] : "n/a"}. Alt: ${
+    }. T: ${aircraft.hasOwnProperty("t") ? aircraft["t"] : "n/a"}. Alt: ${
       getAltitude(aircraft) !== null ? getAltitude(aircraft) : "n/a"
-    }. Speed: ${
-      aircraft.hasOwnProperty("gs") ? aircraft["gs"] : "n/a"
-    }. Heading: ${
+    }. GS: ${aircraft.hasOwnProperty("gs") ? aircraft["gs"] : "n/a"}. Dir: ${
       aircraft.hasOwnProperty("track") ? aircraft["track"] : "n/a"
     }.`;
     //}. Stop tracking with http://${VM_IP}?hex=${hex}/`;
