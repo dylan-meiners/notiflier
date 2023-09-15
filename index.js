@@ -97,6 +97,7 @@ const INTERESTED_TYPES = [
   "C17",
   "B1",
   "C30J",
+  "C32",
   //"DHC6",
   //"SR20",
   //"PA18",
